@@ -15,6 +15,7 @@ class Model(nn.Module):
         self.pred_len=configs.pred_len
         self.seq_len=configs.seq_len
         self.period=configs.period
+        print(f">>> O periodo é {self.period}")
         self.nums=int(self.seq_len/self.period)
         if configs.features=='M':
             self.channels=configs.enc_in
