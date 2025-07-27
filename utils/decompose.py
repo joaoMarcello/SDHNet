@@ -39,7 +39,29 @@ class series_decomp(nn.Module):
         moving_mean = self.moving_avg(x)
         res = x - moving_mean
         return res, moving_mean
-    
+
+class series_decomp_v2(nn.Module):
+    def __init__(self, kernel_size_trend=25, kernel_size_residual=3):
+        super(series_decomp_v2, self).__init__()
+        self.moving_avg_trend = moving_avg(kernel_size_trend, stride=1)
+        self.moving_avg_seasonal = moving_avg(kernel_size_residual, stride=1)
+
+    def forward(self, x):
+        # x: (batch, seq_len, channels)
+
+        # Tendência geral
+        trend = self.moving_avg_trend(x)
+
+        # Sazonalidade bruta = x - tendência
+        seasonal = x - trend
+
+        # Suavização da sazonalidade para obter resíduo
+        seasonal_smooth = self.moving_avg_seasonal(seasonal)
+        residual = seasonal - seasonal_smooth
+
+        return seasonal_smooth, trend, residual
+
+
 
 # FEDformer
 class series_decomp_multi(nn.Module):
