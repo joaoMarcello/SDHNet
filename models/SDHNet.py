@@ -90,8 +90,8 @@ class Model(nn.Module):
         self.noise_block = NoiseBlock(configs.seq_len, configs.pred_len, self.channels)
 
         # trend-cyclical prediction
-        # self.trend_project=nn.Linear(in_features=configs.seq_len,out_features=configs.pred_len)
-        self.trend_project = TrendBlock(seq_len=configs.seq_len, pred_len=configs.pred_len, channels=self.channels)
+        self.trend_project=nn.Linear(in_features=configs.seq_len,out_features=configs.pred_len)
+        # self.trend_project = TrendBlock(seq_len=configs.seq_len, pred_len=configs.pred_len, channels=self.channels)
 
         # seasonal prediction
         self.sample=DoubleSample(self.nums)
@@ -112,7 +112,7 @@ class Model(nn.Module):
         # (b,s,c)->(b,c,s)->(bc,s)
 
 
-        # trend_init=trend_init.permute(0,2,1).reshape(-1,self.seq_len)  
+        trend_init=trend_init.permute(0,2,1).reshape(-1,self.seq_len)  
         # (bc,s)->(bc,pred_len)
         trend_out=self.trend_project(trend_init)
         #(bc,pred_len)->(b,c,pred_len)->(b,pred_len,c)                                  
