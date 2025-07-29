@@ -7,6 +7,42 @@ import numpy as np
 from utils.decompose import series_decomp
 from layers.DualBlock import DoubleSample,ShortExtractor,LongExtractor,FeatureUnion
 
+
+class TrendBlockLinear(nn.Module):
+    def __init__(self, seq_len, pred_len, channels, hidden_dim=128):
+        super(TrendBlockLinear, self).__init__()
+        self.linear1 = nn.Linear(seq_len, hidden_dim)
+        self.activation = nn.Tanh()
+        self.linear2 = nn.Linear(hidden_dim, pred_len)
+        self.channels = channels
+
+    def forward(self, x):
+        # x: (batch, seq_len, channels) → (batch * channels, seq_len)
+        b, s, c = x.shape
+        x = x.permute(0, 2, 1).reshape(-1, s)
+        
+        out = self.linear1(x)
+        out = self.activation(out)
+        out = self.linear2(out)
+
+        # (batch * channels, pred_len) → (batch, pred_len, channels)
+        out = out.reshape(b, c, -1).permute(0, 2, 1)
+        return out
+    
+class TrendBlockAttention(nn.Module):
+    def __init__(self, seq_len, pred_len, channels, num_heads=4):
+        super(TrendBlockAttention, self).__init__()
+        self.attn = nn.MultiheadAttention(embed_dim=channels, num_heads=num_heads, batch_first=True)
+        self.projection = nn.Linear(seq_len, pred_len)
+
+    def forward(self, x):
+        # x: (batch, seq_len, channels)
+        attn_output, _ = self.attn(x, x, x)  # Self-attention
+        out = self.projection(attn_output.permute(0, 2, 1))  # (b, c, seq_len) → (b, c, pred_len)
+        out = out.permute(0, 2, 1)  # → (b, pred_len, c)
+        return out
+
+
 class Model(nn.Module):
     def __init__(self, configs):
         super(Model, self).__init__()
@@ -33,7 +69,10 @@ class Model(nn.Module):
         self.decompsition = series_decomp(configs.moving_avg)
 
         # trend-cyclical prediction
-        self.trend_project=nn.Linear(in_features=configs.seq_len,out_features=configs.pred_len)
+        # self.trend_project=nn.Linear(in_features=configs.seq_len,out_features=configs.pred_len)
+        self.trend_project = TrendBlockLinear(seq_len=configs.seq_len, pred_len=configs.pred_len, channels=self.channels)
+
+
 
         # seasonal prediction
         self.sample=DoubleSample(self.nums)
@@ -50,14 +89,17 @@ class Model(nn.Module):
         
         # batch_x:(batch, seq_len, channel)
         season_init,trend_init=self.decompsition(x)
+
         # (b,s,c)->(b,c,s)->(bc,s)
         season_init=season_init.permute(0,2,1).reshape(-1,self.seq_len)
-        # (b,s,c)->(b,c,s)->(bc,s)
-        trend_init=trend_init.permute(0,2,1).reshape(-1,self.seq_len)  
+
+        # # (b,s,c)->(b,c,s)->(bc,s)
+        # trend_init=trend_init.permute(0,2,1).reshape(-1,self.seq_len)  
+
         # (bc,s)->(bc,pred_len)
         trend_out=self.trend_project(trend_init)
         #(bc,pred_len)->(b,c,pred_len)->(b,pred_len,c)                                  
-        trend_out=trend_out.reshape(-1,self.channels,self.pred_len).permute(0,2,1)
+        # trend_out=trend_out.reshape(-1,self.channels,self.pred_len).permute(0,2,1)
 
         con_x,eq_x=self.sample(season_init)
         tokens=self.shortExtractor(con_x)
