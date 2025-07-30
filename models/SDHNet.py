@@ -30,7 +30,7 @@ class TrendBlockLinear(nn.Module):
         return out
     
 class TrendBlockAttention(nn.Module):
-    def __init__(self, seq_len, pred_len, channels, num_heads=4):
+    def __init__(self, seq_len, pred_len, channels, num_heads=1):
         super(TrendBlockAttention, self).__init__()
         self.attn = nn.MultiheadAttention(embed_dim=channels, num_heads=num_heads, batch_first=True)
         self.projection = nn.Linear(seq_len, pred_len)
@@ -70,7 +70,9 @@ class Model(nn.Module):
 
         # trend-cyclical prediction
         # self.trend_project=nn.Linear(in_features=configs.seq_len,out_features=configs.pred_len)
-        self.trend_project = TrendBlockLinear(seq_len=configs.seq_len, pred_len=configs.pred_len, channels=self.channels)
+        # self.trend_project = TrendBlockLinear(seq_len=configs.seq_len, pred_len=configs.pred_len, channels=self.channels)
+        self.trend_project = TrendBlockAttention(seq_len=configs.seq_len, pred_len=configs.pred_len, channels=self.channels)
+
 
 
 
