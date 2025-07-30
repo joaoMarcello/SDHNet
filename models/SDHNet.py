@@ -54,8 +54,12 @@ class NoiseBlock(nn.Module):
         self.channels = channels
 
     def forward(self, residual):
-        # (b, c, s) -> (b*c, s)
-        residual = residual.permute(0, 2, 1).reshape(-1, residual.shape[1])
+        # # (b, c, s) -> (b*c, s)
+        # residual = residual.permute(0, 2, 1).reshape(-1, residual.shape[1])
+
+        b, s, c = residual.shape
+        residual = residual.permute(0, 2, 1).reshape(-1, s)
+
         out = self.project(residual)
         # (b*c, pred_len) -> (b, c, pred_len) -> (b, pred_len, c)
         out = out.reshape(-1, self.channels, out.shape[1]).permute(0, 2, 1)
@@ -156,6 +160,9 @@ class Model(nn.Module):
         trend_out=self.trend_project(trend_init)
         #(bc,pred_len)->(b,c,pred_len)->(b,pred_len,c)                                  
         # trend_out=trend_out.reshape(-1,self.channels,self.pred_len).permute(0,2,1)
+
+        noise_out = self.noise_block(noise_init)
+
 
         con_x,eq_x=self.sample(season_init)
         tokens=self.shortExtractor(con_x)
