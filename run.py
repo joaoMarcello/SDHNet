@@ -39,7 +39,7 @@ def main():
     parser.add_argument('--enc_in', type=int, default=7, help='encoder input size')
     parser.add_argument('--c_out', type=int, default=7, help='output size')
     parser.add_argument('--d_model', type=int, default=512, help='dimension of model')
-    parser.add_argument('--period',type=int,default=30,help='predetected main period for seasonal part')
+    parser.add_argument('--period',type=int,default=-1,help='predetected main period for seasonal part. Use -1 for auto detect by FFT')
     parser.add_argument('--pooling_size', type=int, default=8, help='kernel size of pooling')
     parser.add_argument('--kernel_list', type=list, default=[3,3], help='kernel size of conv1d')
     parser.add_argument('--activation', type=str, default='tanh', help='activation func for decoder,options=[relu,softplus,tanh,selu,lrelu,prelu,sigmoid]')
